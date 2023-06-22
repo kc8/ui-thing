@@ -375,8 +375,23 @@ typedef struct vi2
     //f32 &operator[](int index) {return((&x)[index]);}; 
 } vi2;
 
+inline vi2 operator*(vi2 b, i32 a)
+{
+    vi2 result = {}; 
+    result.x = a * b.x;;  
+    result.y = a * b.y;  
+    return result; 
+}
 
-//
+// TODO cast is most likely bad and wrong
+inline vi2 operator*(vi2 b, f32 a)
+{
+    vi2 result = {}; 
+    result.x = (i32)a * b.x;;  
+    result.y = (i32)a * b.y;  
+    return result; 
+}
+
 // VECTOR FLOAT 2
 // 
 typedef struct v2 
@@ -1204,3 +1219,22 @@ typedef struct device_input {
     input_device_attributes inputDevices[1];
     f32 dtSeconds;
 } input;
+
+
+
+///////// DATA STRUCTS /////// 
+// NOTE and TODO this is a work in progress and will get more features 
+// as needed
+template <typename T, int N>
+struct kc_array {
+    int capacity;
+    T items[N];
+
+    T& operator[](int index) {
+        Assert(index <= capacity);
+        Assert(index > 0);
+        return items[index];
+    }
+}; 
+
+

@@ -2,12 +2,17 @@
 #include "kc_lib.h"
 #include "file_utils.h"
 
+#include "drawing.h"
+#include "draw.cpp"
+
 char *WINDOW_NAME = "UI Thing";
 
 typedef struct application_state {
   memory_arena memArena;
   b32 applicationRunning; 
   device_input currentDeviceInput; 
+  kc_array<drawing, 1000> drawings;
+  vi2 winDims; //width, height
 } application_state;
 
 global_var application_state APP_STATE = {};
@@ -63,6 +68,7 @@ i32 CALLBACK WinMain(HINSTANCE hInstance,
             &windowRef.win32OpenglContext, 
             shaders.vertexShaders[i], 
             shaders.fragmentShaders[i]);
+    // TODO when if we go to use this we need to update the enum positions
     windowRef.win32OpenglContext.shaders[MeshShader] = s;
   }
 
@@ -74,10 +80,12 @@ i32 CALLBACK WinMain(HINSTANCE hInstance,
         );
 
       win32_window_dimensions winDims = Win32_GetWindowDimension(windowRef.windowHandle); 
+      APP_STATE.winDims = winDims.value;
+
       Win32_opengl_Render(&APP_STATE.memArena, 
               GetDC(windowRef.windowHandle), 
               &windowRef.win32OpenglContext,
-              winDims.width, 
-              winDims.height);
+              winDims.value.x, 
+              winDims.value.y);
   }
 }

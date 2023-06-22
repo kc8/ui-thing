@@ -13,8 +13,7 @@
 
 typedef struct win32_window_dimensions 
 {
-    i32 height; 
-    i32 width; 
+    vi2 value; // x width, y height
 } win32_window_dimensions;
 
 typedef struct win32_offscreen_buffer
@@ -277,8 +276,8 @@ Win32_GetWindowDimension(HWND hWnd)
     RECT rect;
     win32_window_dimensions dim;
     GetClientRect(hWnd, &rect);
-    dim.height = rect.bottom - rect.top;
-    dim.width = rect.right - rect.left;
+    dim.value.y = rect.bottom - rect.top;
+    dim.value.x = rect.right - rect.left;
     return dim;
 }
 
@@ -469,6 +468,9 @@ Win32_ProcessInputFromMessage(
     }
 }
 
+void Win32_openglInitBuffers() {
+}
+
 void 
 Win32_opengl_Render(
     memory_arena *memArena,
@@ -492,4 +494,9 @@ Win32_opengl_Render(
             opengl->shaders[MeshShader]
             );
 #endif
+}
+
+vi2
+func compuateWindowCenter(win32_window_dimensions dims) {
+    return dims.value * 0.5f;
 }
