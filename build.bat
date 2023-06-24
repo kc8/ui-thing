@@ -1,7 +1,11 @@
 
 @echo off
 
-echo Building Space Trucking 
+echo Building UI Thing 
+
+if NOT defined VSCMD_ARG_TGT_ARCH (
+    call vcvars64
+)
 
 set compilerFlags= -MD -GS -Gm- -nologo -Od -Oi -WX -GR -EHa- -DINTERNAL_BUILD=1 -DSLOW=1 -DSPACETRUCKING_WIN32=1 -FC -W4 -wd4505 -wd4201 -wd4100 -wd4189 -Z7
 set linkerFlags= -STACK:0x100000,0x100000 -incremental:no -opt:ref user32.lib gdi32.lib ole32.lib winmm.lib bcrypt.lib kernel32.lib xaudio2.lib mfplat.lib opengl32.lib

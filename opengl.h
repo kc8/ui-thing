@@ -20,6 +20,9 @@
 #define GL_MAJOR_VERSION                  0x821B
 #define GL_MINOR_VERSION                  0x821C
 
+#define GL_SHADER_STORAGE_BUFFER          0x90D2
+#define GL_DYNAMIC_DRAW                   0x88E8
+#define GL_SHADER_STORAGE_BUFFER          0x90D2
 
 // WINDOWS ONLY!
 #define WGL_CONTEXT_MAJOR_VERSION_ARB     0x2091
@@ -28,10 +31,6 @@
 #define WGL_CONTEXT_FLAGS_ARB             0x2094
 #define WGL_CONTEXT_PROFILE_MASK_ARB      0x9126
 #define WGL_CONTEXT_DEBUG_BIT_ARB         0x0001
-#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB    0x0002
-
-#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB          0x00000001
-#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB 0x00000002
 #define WGL_DRAW_TO_PBUFFER_ARB           0x202D
 #define WGL_DRAW_TO_WINDOW_ARB            0x2001
 #define WGL_SUPPORT_OPENGL_ARB            0x2010
@@ -44,9 +43,11 @@
 #define WGL_SHARE_STENCIL_ARB             0x200D
 #define WGL_DEPTH_BITS_ARB                0x2022
 #define WGL_STENCIL_BITS_ARB              0x202
+#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB    0x0002
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB          0x00000001
+#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB 0x00000002
 
 #define MAX_ALLOWABLE_SHADERS 20
-
 #define SIZE_OF_VERT 3
 
 // TODO and NOTE some of these are returning 0x00000 or null which will 
@@ -75,6 +76,8 @@ typedef void WINAPI gl_uniform_matrix_4fv(GLint location, GLsizei count, GLboole
 typedef void WINAPI gl_uniform_1i(GLint location, GLint v0);
 typedef GLboolean WINAPI gl_is_program(GLuint program);
 typedef void WINAPI gl_get_shader_iv(GLuint shader, GLenum pname, GLint *params);
+typedef void WINAPI gl_bind_buffer_base(GLenum program, GLuint index, GLuint buffer); 
+typedef void WINAPI gl_bind_buffer_base(GLenum target, GLuint index, GLuint buffer); 
 
 typedef void WINAPI gl_vertex_attrib_pointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
 typedef void WINAPI gl_enable_vertex_attrib_array(GLuint);
@@ -220,6 +223,7 @@ typedef struct opengl_context
    gl_uniform_1i *glUniform1i;
    gl_is_program *glIsProgram;
    gl_get_shader_iv *glGetShaderiv;
+   gl_bind_buffer_base *glBindBufferBase;
 
    gl_vertex_attrib_pointer *glVertexAttribPointer;
    gl_enable_vertex_attrib_array *glEnableVertexAttribArray;
@@ -789,3 +793,17 @@ InitShader(
     return result;
 }
 
+void initOpenGLShaderBuff(opengl_context *context, void* type, i32 amount) {
+
+    ui32 VAO = 0; 
+    ui32 SSBO = 0;
+
+    context->glGenVertexArrays(1, &VAO);
+    context->glBindVertexArray(VAO);
+
+    context->glBindBuffer(1, SSBO);
+    context->glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
+    context->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, SSBO);
+
+    context->glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(type)*amount, 0, GL_DYNAMIC_DRAW); 
+}
