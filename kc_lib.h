@@ -408,7 +408,14 @@ typedef struct v2
     //Below is an example Comprimise if we were not using a union to 
     //access the elements with [] syntax
     //f32 &operator[](int index) {return((&x)[index]);}; 
+    v2 (f32 x, f32 y) {
+        this->x = x;
+        this->y = y;
+    }
+    v2 () {
+    }
 } v2;
+
 
 // NOTE in C++ unions do not let us 
 //  init like a struct will 
@@ -1223,17 +1230,29 @@ typedef struct device_input {
 
 
 ///////// DATA STRUCTS /////// 
+///
 // NOTE and TODO this is a work in progress and will get more features 
 // as needed
-template <typename T, int N>
+/*
+ * static array with some nice features
+ */
+template <typename T, i32 N>
 struct kc_array {
-    int capacity;
+    i32 capacity = N;
+    i32 count = 0;
     T items[N];
 
     T& operator[](int index) {
         Assert(index <= capacity);
-        Assert(index > 0);
+        Assert(index >= 0);
         return items[index];
+    }
+    
+    constexpr i32 add(T element) {
+        Assert(this->count < capacity);
+        items[this->count] = element;
+        this->count += 1;
+        return count - 1; // return pos
     }
 }; 
 

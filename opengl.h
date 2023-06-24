@@ -77,7 +77,6 @@ typedef void WINAPI gl_uniform_1i(GLint location, GLint v0);
 typedef GLboolean WINAPI gl_is_program(GLuint program);
 typedef void WINAPI gl_get_shader_iv(GLuint shader, GLenum pname, GLint *params);
 typedef void WINAPI gl_bind_buffer_base(GLenum program, GLuint index, GLuint buffer); 
-typedef void WINAPI gl_bind_buffer_base(GLenum target, GLuint index, GLuint buffer); 
 
 typedef void WINAPI gl_vertex_attrib_pointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
 typedef void WINAPI gl_enable_vertex_attrib_array(GLuint);
@@ -423,7 +422,7 @@ OpenGLLogError(
  * Sets up the buffer for later use
  */
 openglObjData 
-OpenGLRectangleSetup_Performant(
+OpenGLRectangleSetupPreBuffered(
         opengl_context *opengl,
         Rectangle2 rect, 
         color c, 
@@ -483,7 +482,10 @@ OpenGLRectangleSetup_Performant(
     return result;
 }
 
-void OpenGlDrawRectnagle_Performant(
+/*
+ * Requires that vertices are pre-set to opengl
+ */ 
+void OpenGlDrawRectanglePreBuffered(
         opengl_context *opengl,
         openglObjData objData,
         m4 modelMat,
@@ -512,8 +514,13 @@ void OpenGlDrawRectnagle_Performant(
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
+/*
+ * Stack allocates the verticies
+ * CAN CAUSE MEMORY LEAK DUE TO WINDOWS API HEAP ALLOCATING
+ * TODO clear free/delete buffer when done?
+ */ 
 void 
-OpenGL2DRectangle(
+OpenGL2DRectangle_Raw(
         opengl_context *opengl,
         m4 modelMat,
         m4 projMat, 
@@ -682,12 +689,15 @@ InitOpenGl(opengl_context *opengl, HWND window, HDC windowDC)
         opengl->glBindBuffer = (gl_bind_buffer *)wglGetProcAddress("glBindBuffer");
         opengl->glBufferData = (gl_buffer_data *)wglGetProcAddress("glBufferData");
         opengl->glActiveTexture = (gl_active_texture *)wglGetProcAddress("glActiveTexture");
-        opengl->glDebugMessageCallback = (gl_debug_message_callback *)wglGetProcAddress("glDebugMessageCallback");
+        opengl->glBindBufferBase = (gl_bind_buffer_base*)wglGetProcAddress("glBindBufferBase");
 
         opengl->openglInfo = OpenGLGetInfo();
+        // TODO debug only in debug builds
+        // TODO we should some how validate each ptr, as their are some returning 0x000 
         glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEPTH_TEST);
-        opengl->glDebugMessageCallback(OpenGLLogError, 0);
+        // TODO fix debug is now being 0x000 
+        // opengl->glDebugMessageCallback(OpenGLLogError, 0);
 
         //  char openglInfoBuffer[256];
         /*snprintf(
@@ -793,7 +803,7 @@ InitShader(
     return result;
 }
 
-void initOpenGLShaderBuff(opengl_context *context, void* type, i32 amount) {
+void initOpenGLShaderBuff(opengl_context *context, ui32 bufferSize) {
 
     ui32 VAO = 0; 
     ui32 SSBO = 0;
@@ -801,9 +811,9 @@ void initOpenGLShaderBuff(opengl_context *context, void* type, i32 amount) {
     context->glGenVertexArrays(1, &VAO);
     context->glBindVertexArray(VAO);
 
+    context->glGenBuffers(1, &SSBO);
     context->glBindBuffer(1, SSBO);
-    context->glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
     context->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, SSBO);
 
-    context->glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(type)*amount, 0, GL_DYNAMIC_DRAW); 
+    context->glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, 0, GL_DYNAMIC_DRAW); 
 }

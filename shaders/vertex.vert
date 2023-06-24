@@ -12,8 +12,8 @@ uniform mat4 proj;
 
 void main() 
 {
-    // ourColor = aColor; 
-    ourColor = vec3(aPos);
+    ourColor = aColor; 
+    //ourColor = vec3(aPos); // interp betweeen verts
     //TexCoord = aTexCoord;
     gl_Position = proj * view * model * vec4(aPos, 1.0f);
     // The below is helpful for a rect if we need to test basics

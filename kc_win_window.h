@@ -468,35 +468,52 @@ Win32_ProcessInputFromMessage(
     }
 }
 
-void Win32_openglInitBuffers() {
-}
-
 void 
 Win32_opengl_Render(
-    memory_arena *memArena,
+    application_state *appState,
     HDC deviceContext,
-    opengl_context *openglContext,
+    opengl_context *glContext,
     i32 winWidth,
     i32 winHeight) {
+    
+    // glContext->glUseProgram();
 
-    color clearColor = Color(0.1f, 0.1f, 0.1f, 0.0f); 
-    OpenGlClearAndSetViewPort(clearColor, winWidth,  winHeight);
+    OpenGlClearAndSetViewPort(Color(0.1f, 0.1f, 0.1f, 0.0f), winWidth,  winHeight);
+    // glClearDepth(0.0); // takes a double
+    //glDepthFunc(GL_GREATER);
 
-    m4 view = GetIdentityMatrix(); 
-    SwapBuffers(deviceContext); 
-#if 0 
-    OpenGlDrawRectnagle_Performant(
-            opengl, 
-            gameState->world->worldRenderData[chunkIndex],
-            modelTransposed,
-            renderData.projMat,
-            view,
-            opengl->shaders[MeshShader]
+    m4 identMat = GetIdentityMatrix(); 
+    if (appState->drawings.count > 0) {
+        Assert(appState->drawings.count > 0);
+    }
+
+    // drawRect(v2(winWidth, winHeight), v2(winWidth, winHeight), color{0.0f, 0.0f, 0.0f, 0.0f}, i32 (*addToDrawings)(drawing)) {
+
+
+#if 1 
+    OpenGlDrawRectanglePreBuffered(
+            glContext, 
+            appState->opengPreBuf[0],
+            identMat,
+            identMat,
+            identMat,
+            glContext->shaders[MeshShader]
             );
+
+#else 
+OpenGL2DRectangle_Raw(
+        glContext,
+            identMat,
+            identMat,
+            identMat,
+            RectMinMax(v2{0.0f, 0.0f}, v2{0.5f, 0.5f}),
+            Color(1.0f, 0.0f, 0.0f, 1.0f),
+            glContext->shaders[MeshShader]);
 #endif
+    SwapBuffers(deviceContext); 
 }
 
 vi2
-func compuateWindowCenter(win32_window_dimensions dims) {
+func computeWindowCenter(win32_window_dimensions dims) {
     return dims.value * 0.5f;
 }

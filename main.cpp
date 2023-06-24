@@ -4,13 +4,16 @@
 
 #include "drawing.h"
 #include "draw.cpp"
+#include "opengl.h"
 
-char *WINDOW_NAME = "UI Thing";
+char *WINDOW_NAME = "UI Thing2";
 
 typedef struct application_state {
   memory_arena memArena;
   b32 applicationRunning; 
   device_input currentDeviceInput; 
+  // opengl buffers sent to gpu before draw call
+  kc_array<openglObjData, 10> opengPreBuf;
   kc_array<drawing, 1000> drawings;
   vi2 winDims; //width, height
 } application_state;
@@ -43,7 +46,6 @@ void inputCallback(KEY_TYPE keyType, b32 isUp, b32 isDown) {
 void rawInputBufferCallback() {
 }
 
-#include "opengl.h"
 #include "kc_win_window.h" //windows.h is defined in here
 
 void exitApplicationCallback() {
@@ -72,6 +74,19 @@ i32 CALLBACK WinMain(HINSTANCE hInstance,
     windowRef.win32OpenglContext.shaders[MeshShader] = s;
   }
 
+  initOpenGLShaderBuff(&windowRef.win32OpenglContext, 
+          sizeof(APP_STATE.drawings.items)
+          );
+
+  APP_STATE.opengPreBuf.add(
+          OpenGLRectangleSetupPreBuffered(
+          &windowRef.win32OpenglContext,
+          RectMinMax(v2{0.0f, 0.0f}, v2{1.0f, 1.0f}),
+          Color(1.0f, 0.0f, 0.0f, 1.0f),
+          windowRef.win32OpenglContext.shaders[MeshShader]
+          )
+    );
+
   while(APP_STATE.applicationRunning) {
       Win32_ProcessInputFromMessage(
           windowRef.windowHandle,
@@ -82,7 +97,8 @@ i32 CALLBACK WinMain(HINSTANCE hInstance,
       win32_window_dimensions winDims = Win32_GetWindowDimension(windowRef.windowHandle); 
       APP_STATE.winDims = winDims.value;
 
-      Win32_opengl_Render(&APP_STATE.memArena, 
+      Win32_opengl_Render(
+              &APP_STATE, 
               GetDC(windowRef.windowHandle), 
               &windowRef.win32OpenglContext,
               winDims.value.x, 
