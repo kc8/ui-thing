@@ -490,7 +490,6 @@ Win32_opengl_Render(
     // drawRect(v2(winWidth, winHeight), v2(winWidth, winHeight), color{0.0f, 0.0f, 0.0f, 0.0f}, i32 (*addToDrawings)(drawing)) {
 
 
-#if 1 
     OpenGlDrawRectanglePreBuffered(
             glContext, 
             appState->opengPreBuf[0],
@@ -499,17 +498,6 @@ Win32_opengl_Render(
             identMat,
             glContext->shaders[MeshShader]
             );
-
-#else 
-OpenGL2DRectangle_Raw(
-        glContext,
-            identMat,
-            identMat,
-            identMat,
-            RectMinMax(v2{0.0f, 0.0f}, v2{0.5f, 0.5f}),
-            Color(1.0f, 0.0f, 0.0f, 1.0f),
-            glContext->shaders[MeshShader]);
-#endif
     SwapBuffers(deviceContext); 
 }
 

@@ -15,6 +15,7 @@ typedef struct application_state {
   // opengl buffers sent to gpu before draw call
   kc_array<openglObjData, 10> opengPreBuf;
   kc_array<drawing, 1000> drawings;
+  kc_ui uiStuff;
   vi2 winDims; //width, height
 } application_state;
 
@@ -81,7 +82,7 @@ i32 CALLBACK WinMain(HINSTANCE hInstance,
   APP_STATE.opengPreBuf.add(
           OpenGLRectangleSetupPreBuffered(
           &windowRef.win32OpenglContext,
-          RectMinMax(v2{0.0f, 0.0f}, v2{1.0f, 1.0f}),
+          RectMinMax(v2{0.0f, 0.0f}, v2{0.5f, 0.5f}),
           Color(1.0f, 0.0f, 0.0f, 1.0f),
           windowRef.win32OpenglContext.shaders[MeshShader]
           )
@@ -97,6 +98,16 @@ i32 CALLBACK WinMain(HINSTANCE hInstance,
       win32_window_dimensions winDims = Win32_GetWindowDimension(windowRef.windowHandle); 
       APP_STATE.winDims = winDims.value;
 
+    APP_STATE.uiStuff.uiElements["key1"] = 2;
+    APP_STATE.uiStuff.uiElements["jump"] = 10;
+    APP_STATE.uiStuff.uiElements["key2"] = 3;
+    APP_STATE.uiStuff.uiElements["key3"] = 4;
+    APP_STATE.uiStuff.uiElements["key4"] = 5;
+    APP_STATE.uiStuff.uiElements["key5"] = 6;
+    APP_STATE.uiStuff.uiElements["key6"] = 7;
+    if (APP_STATE.uiStuff.uiElements["key1"] == 2) {
+        i32 test = 0;
+    }
       Win32_opengl_Render(
               &APP_STATE, 
               GetDC(windowRef.windowHandle), 

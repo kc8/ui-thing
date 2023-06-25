@@ -9,6 +9,7 @@
 #include "math.h"
 
 #include "mem_allocator.h"
+#include <stdlib.h>
 
 // CUSTOM DEFINES / REDEFINES
 #define UI32MAX 0XFFFFFFFF
@@ -911,7 +912,7 @@ RectCenterDim(v2 center, v2 dim)
     return result;
 }
 
-// Exculusive rectangle test
+// INTERACTION Exculusive rectangle test
 inline b32 
 IsInRect(Rectangle2 rect, v2 test)
 {
@@ -1228,7 +1229,6 @@ typedef struct device_input {
 } input;
 
 
-
 ///////// DATA STRUCTS /////// 
 ///
 // NOTE and TODO this is a work in progress and will get more features 
@@ -1256,4 +1256,84 @@ struct kc_array {
     }
 }; 
 
+// hash table
+//
+//
+func ui32 hash(char* str) {
+    ui32 hash = 5381;
+    while(true) {
+        i32 c = *str++;
+        if (!c) {
+            break;
+        }
+        hash = ((hash << 5) + hash) + c;
+    }
+    return hash;
+}
 
+/*
+ * This is not a robust function. It hashes an item into an index 
+ * and does not consider duplicates or if the index is taken. 
+ * This could means key could collide
+ */
+template <typename T>
+struct kc_hashTable {
+    enum STATUS {
+        DUPLICATE_KEY, 
+        FAILED_TO_ADD,
+        SUCCESS,
+    };
+    const static ui32 MAX_ELEMENTS = 1024;
+    T items[MAX_ELEMENTS];
+    ui32 currentKeys[MAX_ELEMENTS];
+
+    ui32 getPos(char* key) {
+        return hash(key) % MAX_ELEMENTS;
+    }
+
+    T& operator[](char* key) {
+        ui32 pos = this->getPos(key);
+        Assert(pos < MAX_ELEMENTS);
+        return this->items[pos];
+    }
+    
+    T& get(char* key) {
+        ui32 pos = this->getPos(key);
+        Assert(pos < MAX_ELEMENTS);
+        if (currentKeys[pos] == 1) {
+            return this->items[pos];
+        }
+        return 0;
+    }
+
+    T& pop(char* key) {
+        ui32 pos = this->getPos(key);
+        Assert(pos < MAX_ELEMENTS);
+        if (currentKeys[pos] == 1) {
+            currentKeys[pos] = 0;
+            return this->items[pos];
+        }
+        return 0;
+    }
+
+    STATUS add(char key, T element) {
+        ui32 pos = this->getPos(key);
+
+        if (currentKeys[pos] == 1) {
+            return  DUPLICATE_KEY;
+        }
+        currentKeys[pos] = 1;
+        items[pos] = element;
+        return SUCCESS;
+    }
+}; 
+
+
+///////// UI /////
+
+typedef struct kc_ui {
+    // TODO i32 is not current but just to make sure things are working it should be okay
+   kc_hashTable<i32> uiElements; 
+} kc_ui;
+
+// Rectangle2 has its own function for within rect bounds
