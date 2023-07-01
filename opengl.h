@@ -77,6 +77,8 @@ typedef void WINAPI gl_uniform_1i(GLint location, GLint v0);
 typedef GLboolean WINAPI gl_is_program(GLuint program);
 typedef void WINAPI gl_get_shader_iv(GLuint shader, GLenum pname, GLint *params);
 typedef void WINAPI gl_bind_buffer_base(GLenum program, GLuint index, GLuint buffer); 
+// TODO guessing on the i32 and ui32 below based on the docs
+typedef void WINAPI gl_buffer_sub_data(GLenum target, i32 offset, ui32 size, const void *data);
 
 typedef void WINAPI gl_vertex_attrib_pointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
 typedef void WINAPI gl_enable_vertex_attrib_array(GLuint);
@@ -234,6 +236,7 @@ typedef struct opengl_context
    gl_active_texture *glActiveTexture;
    gl_debug_message_callback *glDebugMessageCallback;
    wgl_create_context_attribsARB *wglCreateContextAttribsARB;
+   gl_buffer_sub_data *glBufferSubData;
 } opengl_context;
 
 /*
@@ -482,6 +485,27 @@ OpenGLRectangleSetupPreBuffered(
     return result;
 }
 
+void OpenGlUpdateSubBufferColor(
+        opengl_context *opengl,
+        openglObjData objData,
+        color newColor,
+        shader shaderProgram) {
+    f32 colors[] = {
+        newColor.r, newColor.g, newColor.b, // top right
+        newColor.r, newColor.g, newColor.b, // bottom right
+        newColor.r, newColor.g, newColor.b, // bottom left
+        newColor.r, newColor.g, newColor.b // top left 
+    }; 
+
+    opengl->glUseProgram(shaderProgram.programID);
+    opengl->glBindVertexArray(objData.vao);
+    opengl->glBindBuffer(GL_ARRAY_BUFFER, objData.vbo);
+    opengl->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, objData.ebo);
+
+    opengl->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void*)(3 * sizeof(f32)));
+    opengl->glBufferSubData(GL_ARRAY_BUFFER, 24, sizeof(colors), &colors);
+}
+
 /*
  * Requires that vertices are pre-set to opengl
  */ 
@@ -690,6 +714,7 @@ InitOpenGl(opengl_context *opengl, HWND window, HDC windowDC)
         opengl->glBufferData = (gl_buffer_data *)wglGetProcAddress("glBufferData");
         opengl->glActiveTexture = (gl_active_texture *)wglGetProcAddress("glActiveTexture");
         opengl->glBindBufferBase = (gl_bind_buffer_base*)wglGetProcAddress("glBindBufferBase");
+        opengl->glBufferSubData = (gl_buffer_sub_data*)wglGetProcAddress("glBufferSubData");
 
         opengl->openglInfo = OpenGLGetInfo();
         // TODO debug only in debug builds

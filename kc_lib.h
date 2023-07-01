@@ -447,6 +447,15 @@ inline v2 operator*(f32 a, v2 b)
     return result; 
 }
 
+// return a new vector scaled to a f32
+inline b32 operator>(v2 a, f32 b)
+{
+    if (b > a.x && b > a.y) {
+        return true;
+    }
+    return false;
+}
+
 #if 0
 // This is just an example of SIMD operation
 inline v2 SIMDVector(f32 a, f32 b) 
@@ -1221,7 +1230,7 @@ typedef struct device_input {
     v2 normalizedMosePos;
     v2 prevMousePos;
     v2 rawMouseDelta;
-    vf3 rawMousePos; 
+    // v2 rawMousePos;  not sure if we need this because its all in noramizedMousePos
     v2 prevwRawMousePos;
     f32 secondsElapsed;
     input_device_attributes inputDevices[1];
@@ -1286,6 +1295,7 @@ struct kc_hashTable {
     const static ui32 MAX_ELEMENTS = 1024;
     T items[MAX_ELEMENTS];
     ui32 currentKeys[MAX_ELEMENTS];
+    ui32 COUNT = MAX_ELEMENTS;
 
     ui32 getPos(char* key) {
         return hash(key) % MAX_ELEMENTS;
@@ -1316,7 +1326,7 @@ struct kc_hashTable {
         return 0;
     }
 
-    STATUS add(char key, T element) {
+    STATUS add(char* key, T element) {
         ui32 pos = this->getPos(key);
 
         if (currentKeys[pos] == 1) {
@@ -1332,13 +1342,20 @@ struct kc_hashTable {
 ///////// UI /////
 ///
 
+//TODO refactor, this is/was to avoid the need to rely on opengl but yeah
+typedef struct renderableData {
+   ui32 vao;
+   ui32 vbo;
+   ui32 ebo;
+   ui32 indexBuffer;
+} renderableData;
+
 typedef struct kc_ui_id {
     ui32 uiId;
-} kc_uid_id;
+    Rectangle2 position;
+    color c;
+    renderableData renderData;
+} kc_ui_id;
 
-typedef struct kc_ui {
-    // TODO i32 is not current but just to make sure things are working it should be okay
-   kc_hashTable<i32> uiElements; 
-} kc_ui;
 
 // Rectangle2 has its own function for within rect bounds

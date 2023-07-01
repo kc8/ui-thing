@@ -439,6 +439,7 @@ Win32_ProcessInputFromMessage(
             } break;
 #endif
             case(WM_LBUTTONDOWN):
+            //TODO the up mouse button does not seem to be getting called
             {
                 b32 wasDown = ((message.lParam & (1 << 30)) != 0);
                 b32 isDown = ((message.lParam & (1UL << 31)) == 0);
@@ -453,7 +454,14 @@ Win32_ProcessInputFromMessage(
                 POINT pt = {};
                 i32 x = getLowPart(message.lParam);
                 i32 y = getHighPart(message.lParam);
-                inputCallback(MOUSE_LEFT, isUp, isDown);
+                inputCallback(MOUSE_LEFT, 0, 1);
+                rawMousePos(x, y);
+            } break;
+            case(WM_LBUTTONUP): 
+            {
+                i32 x = getLowPart(message.lParam);
+                i32 y = getHighPart(message.lParam);
+                inputCallback(MOUSE_LEFT, 1, 0);
                 rawMousePos(x, y);
             } break;
             case(WM_RBUTTONDOWN):
@@ -470,9 +478,26 @@ Win32_ProcessInputFromMessage(
                 b32 isUp = wasDown;
                 i32 x = getLowPart(message.lParam);
                 i32 y = getHighPart(message.lParam);
-                inputCallback(MOUSE_RIGHT, isUp, isDown);
+                inputCallback(MOUSE_RIGHT, 0, 1);
                 rawMousePos(x, y);
             } break;
+            case(WM_RBUTTONUP):
+            {
+                b32 wasDown = ((message.lParam & (1 << 30)) != 0);
+                b32 isDown = ((message.lParam & (1UL << 31)) == 0);
+                b32 keyPressTransitionState = 30; 
+                if (isDown) 
+                {
+                    //NOTE 1 is key down before, zero if key is up
+                    keyPressTransitionState = ((message.lParam << 30) == 1);
+                }
+
+                b32 isUp = wasDown;
+                i32 x = getLowPart(message.lParam);
+                i32 y = getHighPart(message.lParam);
+                inputCallback(MOUSE_RIGHT, 1, 0);
+                rawMousePos(x, y);
+            }break;
             case (WM_MOUSEMOVE):
             {
                 if(message.wParam & MK_LBUTTON)
@@ -501,20 +526,17 @@ Win32_opengl_Render(
     // glContext->glUseProgram();
 
     OpenGlClearAndSetViewPort(Color(0.1f, 0.1f, 0.1f, 0.0f), winWidth,  winHeight);
-    // glClearDepth(0.0); // takes a double
-    //glDepthFunc(GL_GREATER);
+    // glClearDepth(0.0);
+    // glDepthFunc(GL_GREATER);
 
     m4 identMat = GetIdentityMatrix(); 
     if (appState->drawings.count > 0) {
         Assert(appState->drawings.count > 0);
     }
 
-    // drawRect(v2(winWidth, winHeight), v2(winWidth, winHeight), color{0.0f, 0.0f, 0.0f, 0.0f}, i32 (*addToDrawings)(drawing)) {
-
-
     OpenGlDrawRectanglePreBuffered(
             glContext, 
-            appState->opengPreBuf[0],
+            appState->opengPreBuf["red-square"],
             identMat,
             identMat,
             identMat,

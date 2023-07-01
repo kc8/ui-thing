@@ -12,11 +12,15 @@ typedef struct application_state {
   memory_arena memArena;
   b32 applicationRunning; 
   device_input currentDeviceInput; 
+  
   // opengl buffers sent to gpu before draw call
-  kc_array<openglObjData, 10> opengPreBuf;
+  // kc_array<openglObjData, 10> opengPreBuf;
+  // hash table(s) keep elements of one another
+  kc_hashTable<openglObjData> opengPreBuf;
+  kc_hashTable<kc_ui_id> uiElements; 
+
   kc_array<drawing, 1000> drawings;
-  kc_ui uiStuff;
-  vi2 winDims; //width, height
+  vi2 winDims; //width, height: full window resolution
 } application_state;
 
 global_var application_state APP_STATE = {};
@@ -27,20 +31,24 @@ void inputCallback(KEY_TYPE keyType, b32 isUp, b32 isDown) {
     switch (keyType) {
         case MOUSE_LEFT: {
             keyState = &APP_STATE.currentDeviceInput.inputDevices[0].leftClick;
-        }
+            keyState->endedDown = isDown;
+            break;
+        }break;
         case MOUSE_RIGHT: {
             keyState = &APP_STATE.currentDeviceInput.inputDevices[0].rightClick;
-        }
+            keyState->endedDown = isDown;
+            break;
+        }break;
         case SPACEBAR: {
             keyState = &APP_STATE.currentDeviceInput.inputDevices[0].spacebar;
-        }
+            // set the key state
+            if (keyState->endedDown != isDown)
+            {
+                keyState->endedDown = isDown; 
+                ++keyState->priorState; 
+            }
+        }break;
           break;
-    }
-    // set the key state
-    if (keyState->endedDown != isDown)
-    {
-        keyState->endedDown = isDown; 
-        ++keyState->priorState; 
     }
 }
 
@@ -53,13 +61,16 @@ void rawMousePos(i32 x, i32 y) {
     // TODO  we need to handle negatives correctly
   v2 midPoint =
       v2{(f32)((APP_STATE.winDims.x / 2.0f)), (f32)((-APP_STATE.winDims.y / 2.0f))};
-  v2 translatedCoord =
-      v2{(f32)(x - (APP_STATE.winDims.x / 2.0f)), (f32)(y - (APP_STATE.winDims.y / 2.0f))};
+  v2 translatedCoord = v2{
+        (f32)(x - (APP_STATE.winDims.x / 2.0f)),
+        (f32)(y + (-APP_STATE.winDims.y / 2.0f))
+      };
   v2 clicked = NormalizeCoordiantesV2(translatedCoord, midPoint);
-  vi2 nothing = APP_STATE.winDims;
-}
 
-void _rawInputBufferCallback() {
+  APP_STATE.currentDeviceInput.prevMousePos = APP_STATE.currentDeviceInput.normalizedMosePos;
+  APP_STATE.currentDeviceInput.normalizedMosePos = clicked;
+  APP_STATE.currentDeviceInput.rawMouseDelta = clicked - APP_STATE.currentDeviceInput.prevMousePos;
+  vi2 nothing = APP_STATE.winDims;
 }
 
 #include "kc_win_window.h" //windows.h is defined in here
@@ -67,6 +78,26 @@ void _rawInputBufferCallback() {
 void exitApplicationCallback() {
     vf3 center = vf3{((f32)APP_STATE.winDims.x/2.0f), ((f32)APP_STATE.winDims.y/2.0f)};
     APP_STATE.applicationRunning = false;
+}
+
+void updateUI(application_state *appState, win32_window_handle_wrapper *windowRef) {
+    if (APP_STATE.currentDeviceInput.inputDevices[0].leftClick.endedDown) {
+             v2 nothing0 = v2{};
+            if (appState->currentDeviceInput.rawMouseDelta > 0.0f) {
+                v2 nothing = v2{};
+                b32 isInRect = IsInRect(appState->uiElements["red-square"].position, appState->currentDeviceInput.normalizedMosePos);
+                Rectangle2 rect = appState->uiElements["red-square"].position;
+                v2 mousePos = appState->currentDeviceInput.normalizedMosePos; 
+                b32 smoething = false;
+                if (IsInRect(appState->uiElements["red-square"].position, appState->currentDeviceInput.normalizedMosePos)) {
+                OpenGlUpdateSubBufferColor(
+                    &windowRef->win32OpenglContext,
+                    appState->opengPreBuf["red-square"],
+                    Color(0.0f, 0.0f, 1.0f, 1.0f),
+                    windowRef->win32OpenglContext.shaders[MeshShader]);
+            }
+        }
+    }
 }
 
 i32 CALLBACK WinMain(HINSTANCE hInstance, 
@@ -95,16 +126,42 @@ i32 CALLBACK WinMain(HINSTANCE hInstance,
           sizeof(APP_STATE.drawings.items)
           );
 
-  APP_STATE.opengPreBuf.add(
-          OpenGLRectangleSetupPreBuffered(
+    openglObjData redSquare = OpenGLRectangleSetupPreBuffered(
           &windowRef.win32OpenglContext,
           RectMinMax(v2{0.0f, 0.0f}, v2{0.5f, 0.5f}),
           Color(1.0f, 0.0f, 0.0f, 1.0f),
-          windowRef.win32OpenglContext.shaders[MeshShader]
-          )
-    );
+          windowRef.win32OpenglContext.shaders[MeshShader]);
+
+    APP_STATE.opengPreBuf["red-square"] = redSquare;
+    APP_STATE.uiElements["red-square"] = kc_ui_id{
+      .uiId = 0,
+      .position = RectMinMax(v2{0.0f, 0.0f}, v2{0.5f, 0.5f}),
+      .c = Color(1.0f, 0.0f, 0.0f, 1.0f),
+      .renderData = renderableData{
+           .vao = redSquare.vao,
+           .vbo = redSquare.vbo,
+           .ebo = redSquare.ebo,
+           .indexBuffer = redSquare.indexBuffer
+      }
+  };
+
+  device_input input[2] = {}; 
+  device_input *newInput = &input[0];
+  device_input *oldInput = &input[1];
 
   while(APP_STATE.applicationRunning) {
+      input_device_attributes *oldKeyboardInput = 
+          &oldInput->inputDevices[0]; 
+      input_device_attributes *newKeyboardInput =
+          &newInput->inputDevices[0]; 
+      *newKeyboardInput = {}; 
+      i8 btnArrayCount = ArrayCount(newKeyboardInput->buttons); 
+      for(i8 btnIndex = 0; btnIndex < btnArrayCount; ++btnIndex)
+      {
+          newKeyboardInput->buttons[btnIndex].endedDown =
+              oldKeyboardInput->buttons[btnIndex].endedDown;
+      }
+
       Win32_ProcessInputFromMessage(
           windowRef.windowHandle,
           inputCallback, 
@@ -115,6 +172,8 @@ i32 CALLBACK WinMain(HINSTANCE hInstance,
       win32_window_dimensions winDims = Win32_GetWindowDimension(windowRef.windowHandle); 
       APP_STATE.winDims = winDims.value;
 
+      updateUI(&APP_STATE, &windowRef);
+
       Win32_opengl_Render(
               &APP_STATE, 
               GetDC(windowRef.windowHandle), 
@@ -122,4 +181,12 @@ i32 CALLBACK WinMain(HINSTANCE hInstance,
               winDims.value.x, 
               winDims.value.y);
   }
+        device_input *tempInput = newInput; 
+        newInput = oldInput; 
+        oldInput = tempInput;
+
+        // TODO not handling the mouse button UP events correctly, this will most likely cause 
+        // bugs later
+        inputCallback(MOUSE_RIGHT, 1, 0);
+        inputCallback(MOUSE_LEFT, 1, 0);
 }
