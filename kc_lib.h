@@ -770,7 +770,7 @@ func v2
 NormalizeCoordiantesV2(v2 a, v2 b)
 {
     v2 result = {}; 
-    if (b.x > 0 && b.y > 0)
+    if (b.x != 0 && b.y !=  0)
     {
         result.x = a.x/b.x; 
         result.y = a.y/b.y;
@@ -1330,6 +1330,11 @@ struct kc_hashTable {
 
 
 ///////// UI /////
+///
+
+typedef struct kc_ui_id {
+    ui32 uiId;
+} kc_uid_id;
 
 typedef struct kc_ui {
     // TODO i32 is not current but just to make sure things are working it should be okay

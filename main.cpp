@@ -6,7 +6,7 @@
 #include "draw.cpp"
 #include "opengl.h"
 
-char *WINDOW_NAME = "UI Thing2";
+char *WINDOW_NAME = "UI Thing";
 
 typedef struct application_state {
   memory_arena memArena;
@@ -44,12 +44,28 @@ void inputCallback(KEY_TYPE keyType, b32 isUp, b32 isDown) {
     }
 }
 
-void rawInputBufferCallback() {
+/*
+ * We want to translate our coordinate space from 
+ * what windows gives us to our opengl coordinate space
+ * TODO improve this
+ */
+void rawMousePos(i32 x, i32 y) {
+    // TODO  we need to handle negatives correctly
+  v2 midPoint =
+      v2{(f32)((APP_STATE.winDims.x / 2.0f)), (f32)((-APP_STATE.winDims.y / 2.0f))};
+  v2 translatedCoord =
+      v2{(f32)(x - (APP_STATE.winDims.x / 2.0f)), (f32)(y - (APP_STATE.winDims.y / 2.0f))};
+  v2 clicked = NormalizeCoordiantesV2(translatedCoord, midPoint);
+  vi2 nothing = APP_STATE.winDims;
+}
+
+void _rawInputBufferCallback() {
 }
 
 #include "kc_win_window.h" //windows.h is defined in here
 
 void exitApplicationCallback() {
+    vf3 center = vf3{((f32)APP_STATE.winDims.x/2.0f), ((f32)APP_STATE.winDims.y/2.0f)};
     APP_STATE.applicationRunning = false;
 }
 
@@ -92,22 +108,13 @@ i32 CALLBACK WinMain(HINSTANCE hInstance,
       Win32_ProcessInputFromMessage(
           windowRef.windowHandle,
           inputCallback, 
+          rawMousePos,
           exitApplicationCallback
         );
 
       win32_window_dimensions winDims = Win32_GetWindowDimension(windowRef.windowHandle); 
       APP_STATE.winDims = winDims.value;
 
-    APP_STATE.uiStuff.uiElements["key1"] = 2;
-    APP_STATE.uiStuff.uiElements["jump"] = 10;
-    APP_STATE.uiStuff.uiElements["key2"] = 3;
-    APP_STATE.uiStuff.uiElements["key3"] = 4;
-    APP_STATE.uiStuff.uiElements["key4"] = 5;
-    APP_STATE.uiStuff.uiElements["key5"] = 6;
-    APP_STATE.uiStuff.uiElements["key6"] = 7;
-    if (APP_STATE.uiStuff.uiElements["key1"] == 2) {
-        i32 test = 0;
-    }
       Win32_opengl_Render(
               &APP_STATE, 
               GetDC(windowRef.windowHandle), 

@@ -281,6 +281,19 @@ Win32_GetWindowDimension(HWND hWnd)
     return dim;
 }
 
+i32 
+func getLowPart(i64 whole) {
+    i32 result = (whole & 0xFFFF);
+    return result; 
+}
+
+i32 
+func getHighPart(i64 whole) {
+    i32 result = ((whole >> 16) & 0xFFFF);
+    return result;
+}
+    
+
 //NOTE code from Raymond Chen
 //https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353
 void 
@@ -319,6 +332,7 @@ void
 Win32_ProcessInputFromMessage(
         HWND hWnd, 
         void (*inputCallback)(KEY_TYPE, b32, b32),
+        void (*rawMousePos)(i32, i32),
         void (*exitApplication)()) {
     MSG message; 
     while(PeekMessage(&message, hWnd, 0, 0, PM_REMOVE)) {
@@ -436,7 +450,11 @@ Win32_ProcessInputFromMessage(
                 }
 
                 b32 isUp = wasDown;
+                POINT pt = {};
+                i32 x = getLowPart(message.lParam);
+                i32 y = getHighPart(message.lParam);
                 inputCallback(MOUSE_LEFT, isUp, isDown);
+                rawMousePos(x, y);
             } break;
             case(WM_RBUTTONDOWN):
             {
@@ -450,7 +468,10 @@ Win32_ProcessInputFromMessage(
                 }
 
                 b32 isUp = wasDown;
+                i32 x = getLowPart(message.lParam);
+                i32 y = getHighPart(message.lParam);
                 inputCallback(MOUSE_RIGHT, isUp, isDown);
+                rawMousePos(x, y);
             } break;
             case (WM_MOUSEMOVE):
             {
@@ -467,6 +488,7 @@ Win32_ProcessInputFromMessage(
         }
     }
 }
+
 
 void 
 Win32_opengl_Render(
