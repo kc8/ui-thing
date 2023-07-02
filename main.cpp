@@ -82,19 +82,24 @@ void exitApplicationCallback() {
 
 void updateUI(application_state *appState, win32_window_handle_wrapper *windowRef) {
     if (APP_STATE.currentDeviceInput.inputDevices[0].leftClick.endedDown) {
-             v2 nothing0 = v2{};
-            if (appState->currentDeviceInput.rawMouseDelta > 0.0f) {
-                v2 nothing = v2{};
-                b32 isInRect = IsInRect(appState->uiElements["red-square"].position, appState->currentDeviceInput.normalizedMosePos);
-                Rectangle2 rect = appState->uiElements["red-square"].position;
-                v2 mousePos = appState->currentDeviceInput.normalizedMosePos; 
+            b32 isInRect = IsInRect(appState->uiElements["red-square"].position, appState->currentDeviceInput.normalizedMosePos);
+            Rectangle2 rect = appState->uiElements["red-square"].position;
+            v2 mousePos = appState->currentDeviceInput.normalizedMosePos; 
+            v2 nothing0 = appState->currentDeviceInput.rawMouseDelta;
+            if (appState->currentDeviceInput.rawMouseDelta > 0.0f || appState->currentDeviceInput.rawMouseDelta < 0.0f) {
                 b32 smoething = false;
                 if (IsInRect(appState->uiElements["red-square"].position, appState->currentDeviceInput.normalizedMosePos)) {
-                OpenGlUpdateSubBufferColor(
-                    &windowRef->win32OpenglContext,
-                    appState->opengPreBuf["red-square"],
-                    Color(0.0f, 0.0f, 1.0f, 1.0f),
-                    windowRef->win32OpenglContext.shaders[MeshShader]);
+                    color c = appState->uiElements["red-square"].c;
+                    v2 mouseForColor = appState->currentDeviceInput.normalizedMosePos;
+                    color newColor = Color(mouseForColor.x, mouseForColor.y, mouseForColor.x, c.a);
+                    appState->uiElements["red-square"].c = newColor;
+                    OpenGlUpdateSubBufferColor(
+                        &windowRef->win32OpenglContext,
+                        appState->opengPreBuf["red-square"],
+                        newColor,
+                        windowRef->win32OpenglContext.shaders[MeshShader]);
+            } else {
+                smoething = true;
             }
         }
     }
@@ -126,7 +131,7 @@ i32 CALLBACK WinMain(HINSTANCE hInstance,
           sizeof(APP_STATE.drawings.items)
           );
 
-    openglObjData redSquare = OpenGLRectangleSetupPreBuffered(
+    openglObjData redSquare = OpenGLRectangleSetupPreBufferedBatched(
           &windowRef.win32OpenglContext,
           RectMinMax(v2{0.0f, 0.0f}, v2{0.5f, 0.5f}),
           Color(1.0f, 0.0f, 0.0f, 1.0f),

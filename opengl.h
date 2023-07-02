@@ -485,12 +485,98 @@ OpenGLRectangleSetupPreBuffered(
     return result;
 }
 
+/*
+ * Sets up the buffer for later use
+ */
+openglObjData 
+OpenGLRectangleSetupPreBufferedBatched(
+        opengl_context *opengl,
+        Rectangle2 rect, 
+        color c, 
+        shader shaderProgram) 
+{
+    v2 min = rect.min;
+    v2 max = rect.max;
+    i32 programID = shaderProgram.programID;
+    color cNorm = c;
+    
+    f32 pos[] = {
+        // positions    
+        max.x, max.y, 0,
+        max.x, min.y, 0,
+        min.x, min.y, 0,
+        min.x, max.y, 0
+            // The above z used to be -max.x 2-13
+    }; 
+
+    f32 norms[] = {
+           // colors           
+        cNorm.r, cNorm.g, cNorm.b,
+        cNorm.r, cNorm.g, cNorm.b,
+        cNorm.r, cNorm.g, cNorm.b,
+        cNorm.r, cNorm.g, cNorm.b
+            // The above z used to be -max.x 2-13
+    }; 
+
+    f32 tex[] = {
+        // texture coords
+        1.0f, 1.0f,   // top right
+        1.0f, 0.0f,   // bottom right
+        0.0f, 0.0f,   //  bottom left
+        0.0f, 1.0f    // top left 
+            // The above z used to be -max.x 2-13
+    }; 
+
+    ui32 indices[] = 
+    { 
+        0, 1, 3, 
+        1, 2, 3
+    };
+
+    ui32 VAO; 
+    ui32 VBO; 
+    ui32 EBO;
+    opengl->glUseProgram(programID);
+    opengl->glGenVertexArrays(1, &VAO);
+    opengl->glGenBuffers(1, &VBO);
+    opengl->glGenBuffers(1, &EBO);
+    //TODO we must import the following functions if we get a compiler error
+    opengl->glBindVertexArray(VAO);
+
+    opengl->glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    opengl->glBufferData(GL_ARRAY_BUFFER, sizeof(norms) + sizeof(pos) + sizeof(tex), 0, GL_STATIC_DRAW);
+
+    opengl->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    opengl->glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    // position attribute
+    opengl->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void*)0);
+    opengl->glEnableVertexAttribArray(0);
+    // color attribute
+    opengl->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void*)(sizeof(pos)));
+    opengl->glEnableVertexAttribArray(1);
+    // texture coord attribute
+    opengl->glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(f32), (void*)(sizeof(norms) + sizeof(pos)));
+    opengl->glEnableVertexAttribArray(2);
+    opengl->glBindVertexArray(VAO);
+
+    opengl->glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pos), &pos);
+    opengl->glBufferSubData(GL_ARRAY_BUFFER, sizeof(pos), sizeof(norms), &norms);
+    opengl->glBufferSubData(GL_ARRAY_BUFFER, sizeof(pos) + sizeof(norms), sizeof(tex), &tex);
+
+    openglObjData result = {};
+    result.vao = VAO;
+    result.vbo = VBO;
+    result.ebo = EBO;
+    return result;
+}
+
 void OpenGlUpdateSubBufferColor(
         opengl_context *opengl,
         openglObjData objData,
         color newColor,
         shader shaderProgram) {
-    f32 colors[] = {
+    f32 norms[] = {
         newColor.r, newColor.g, newColor.b, // top right
         newColor.r, newColor.g, newColor.b, // bottom right
         newColor.r, newColor.g, newColor.b, // bottom left
@@ -502,8 +588,8 @@ void OpenGlUpdateSubBufferColor(
     opengl->glBindBuffer(GL_ARRAY_BUFFER, objData.vbo);
     opengl->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, objData.ebo);
 
-    opengl->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void*)(3 * sizeof(f32)));
-    opengl->glBufferSubData(GL_ARRAY_BUFFER, 24, sizeof(colors), &colors);
+    // opengl->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f32), (void*)(3 * sizeof(f32)));
+    opengl->glBufferSubData(GL_ARRAY_BUFFER, (4*3)*sizeof(f32), sizeof(norms), &norms);
 }
 
 /*

@@ -125,6 +125,18 @@ RoundF32ToUI32(f32 floatVal)
     return result;
 }
 
+func ui32 hash(char* str) {
+    ui32 hash = 5381;
+    while(true) {
+        i32 c = *str++;
+        if (!c) {
+            break;
+        }
+        hash = ((hash << 5) + hash) + c;
+    }
+    return hash;
+}
+
 typedef struct bit_scan_result 
 {
     b32 found; 
@@ -451,6 +463,15 @@ inline v2 operator*(f32 a, v2 b)
 inline b32 operator>(v2 a, f32 b)
 {
     if (b > a.x && b > a.y) {
+        return true;
+    }
+    return false;
+}
+
+// return a new vector scaled to a f32
+inline b32 operator<(v2 a, f32 b)
+{
+    if (b < a.x && b < a.y) {
         return true;
     }
     return false;
@@ -1107,6 +1128,11 @@ Color()
    return result;
 };
 
+// TODO ring buffer for this that we just get the next color in the buffer eventuall 
+// going back to the start? Will need some kind of mem allocator for that
+inline color CrudeRandomColor() {
+}
+
 
 ////// STRINGS ///////////
 
@@ -1268,17 +1294,6 @@ struct kc_array {
 // hash table
 //
 //
-func ui32 hash(char* str) {
-    ui32 hash = 5381;
-    while(true) {
-        i32 c = *str++;
-        if (!c) {
-            break;
-        }
-        hash = ((hash << 5) + hash) + c;
-    }
-    return hash;
-}
 
 /*
  * This is not a robust function. It hashes an item into an index 
